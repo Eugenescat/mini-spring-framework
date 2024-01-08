@@ -11,9 +11,7 @@ public class BeanDefinition {
     public String getId() {
         return id;
     }
-    public String setId(String id) {
-        this.id = id;
-    }
+    public void setId(String id) {this.id = id;}
     public String getClassName() {
         return className;
     }
