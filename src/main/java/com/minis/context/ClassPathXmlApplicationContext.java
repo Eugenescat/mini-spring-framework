@@ -8,7 +8,7 @@ import com.minis.beans.XMLBeanDefinitionReader;
 import com.minis.core.ClassPathXmlResource;
 import com.minis.core.Resource;
 
-/** integrate the functions of get-context + make-resource + load-into-factory
+/** integrate the functions of make-resource + read-and-load-into-factory
  * has methods of getBean and registerBeanDefinition, as a BeanFactory */
 public class ClassPathXmlApplicationContext implements BeanFactory {
   BeanFactory beanFactory;
