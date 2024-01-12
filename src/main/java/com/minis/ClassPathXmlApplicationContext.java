@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** row IoC (coupling version) */
 public class ClassPathXmlApplicationContext {
     private List<BeanDefinition> beanDefinitions = new ArrayList<>();
     private Map<String, Object> singletons = new HashMap<>();
