@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /** STORE resources, can do getBean and registerBeanDefinition */
 public class SimpleBeanFactory implements BeanFactory {
 
-  private List<BeanDefinition> beanDefinitionList = new ArrayList<>();
-  private List<String> beanNameList = new ArrayList<>();
+  private Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
   private Map<String, Object> singletons = new HashMap<>();
   public SimpleBeanFactory() {
   }
@@ -21,21 +21,20 @@ public class SimpleBeanFactory implements BeanFactory {
     Object singleton = singletons.get(beanName);
     // if not registered, try to find from beanNameList, and get the corresponding defi
     if (singleton == null) {
-      int i = beanNameList.indexOf(beanName);
-      // not even found in the beanNameList
-      if (i == -1) {
+      // not even found in the beanDefinitionMap
+      BeanDefinition bd = null;
+      try {
+        bd = beanDefinitionMap.get(beanName);
+      } catch (NullPointerException e) {
         throw new BeansException("bean not found");
       }
       // found in the beanNameList, then fetch its defi and initiate it
-      else {
-        BeanDefinition bd = beanDefinitionList.get(i);
-        try {
-          singleton = Class.forName(bd.getClassName()).newInstance();
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-          throw new RuntimeException(e);
-        }
-        singletons.put(bd.getId(), singleton);
+      try {
+        singleton = Class.forName(bd.getClassName()).newInstance();
+      } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        throw new RuntimeException(e);
       }
+      singletons.put(bd.getId(), singleton);
     }
     return singleton;
   }
@@ -43,7 +42,6 @@ public class SimpleBeanFactory implements BeanFactory {
   /** when register, only update beanDefinitionList and beanNameList */
   @Override
   public void registerBeanDefinition(BeanDefinition beanDefinition) {
-    this.beanDefinitionList.add(beanDefinition);
-    this.beanNameList.add(beanDefinition.getId());
+    this.beanDefinitionMap.put(beanDefinition.getId(), beanDefinition);
   }
 }
