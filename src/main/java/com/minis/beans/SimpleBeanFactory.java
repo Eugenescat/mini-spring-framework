@@ -1,10 +1,7 @@
 package com.minis.beans;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /** STORE beans, can do getBean and registerBeanDefinition */
 public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
