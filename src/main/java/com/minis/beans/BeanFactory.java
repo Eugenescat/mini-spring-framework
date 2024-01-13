@@ -1,8 +1,8 @@
 package com.minis.beans;
 
+/** store beans */
 public interface BeanFactory {
-    /* get a bean */
     Object getBean(String beanName) throws BeansException;
-    /* add a beanDefinition to the beanDefinition list */
-    void registerBeanDefinition(BeanDefinition beanDefinition);
+    boolean containsBean(String beanName);
+    void registerBean(String beanName, Object obj);
 }

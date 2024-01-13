@@ -6,19 +6,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/** STORE resources, can do getBean and registerBeanDefinition */
-public class SimpleBeanFactory implements BeanFactory {
+/** STORE beans, can do getBean and registerBeanDefinition */
+public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
 
   private Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
-  private Map<String, Object> singletons = new HashMap<>();
   public SimpleBeanFactory() {
   }
 
   /** only when we need to get the bean instance, we initiate it */
-  @Override
   public Object getBean(String beanName) throws BeansException {
     // try if the bean is already registered
-    Object singleton = singletons.get(beanName);
+    // use methods extends from DefaultSingletonBeanRegistry
+    Object singleton = this.getSingleton(beanName);
     // if not registered, try to find from beanNameList, and get the corresponding defi
     if (singleton == null) {
       // not even found in the beanDefinitionMap
@@ -34,14 +33,19 @@ public class SimpleBeanFactory implements BeanFactory {
       } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
         throw new RuntimeException(e);
       }
-      singletons.put(bd.getId(), singleton);
+      // use methods extends from DefaultSingletonBeanRegistry
+      this.registerSingleton(bd.getId(), singleton);
     }
     return singleton;
   }
-
-  /** when register, only update beanDefinitionList and beanNameList */
-  @Override
+  public boolean containsBean(String name) {
+    return this.containsSingleton(name);
+  }
+  /** when to register, only update beanDefinitionMap (lazy) */
   public void registerBeanDefinition(BeanDefinition beanDefinition) {
     this.beanDefinitionMap.put(beanDefinition.getId(), beanDefinition);
+  }
+  public void registerBean(String beanName, Object obj) {
+    this.registerSingleton(beanName, obj);
   }
 }

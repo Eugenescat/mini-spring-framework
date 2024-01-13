@@ -6,9 +6,9 @@ import org.dom4j.Element;
 
 /** has a method to load all the beanDefinitions from the input XML resource into the included factory */
 public class XMLBeanDefinitionReader {
-  BeanFactory beanFactory;
-  public XMLBeanDefinitionReader(BeanFactory beanFactory) {
-    this.beanFactory = beanFactory;
+  SimpleBeanFactory simpleBeanFactory;
+  public XMLBeanDefinitionReader(SimpleBeanFactory simpleBeanFactory) {
+    this.simpleBeanFactory = simpleBeanFactory;
   }
 
   public void loadBeanDefinitions(Resource resource) {
@@ -17,7 +17,7 @@ public class XMLBeanDefinitionReader {
       String beanID = element.attributeValue("id");
       String beanClassName = element.attributeValue("class");
       BeanDefinition beanDefinition = new BeanDefinition(beanID, beanClassName);
-      this.beanFactory.registerBeanDefinition(beanDefinition);
+      this.simpleBeanFactory.registerBeanDefinition(beanDefinition);
     }
   }
 }
