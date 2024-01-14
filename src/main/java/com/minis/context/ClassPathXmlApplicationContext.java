@@ -10,8 +10,9 @@ import com.minis.core.Resource;
 
 /** integrate the functions of make-resource + read-and-load-into-factory
  * has methods of getBean and registerBeanDefinition, as a BeanFactory */
-public class ClassPathXmlApplicationContext implements BeanFactory {
+public class ClassPathXmlApplicationContext implements BeanFactory, ApplicationEventPublisher {
   SimpleBeanFactory simpleBeanFactory;
+
   public ClassPathXmlApplicationContext(String fileName) {
     // get an iterable resource from XML
     Resource resource = new ClassPathXmlResource(fileName);
@@ -33,7 +34,20 @@ public class ClassPathXmlApplicationContext implements BeanFactory {
   public void registerBean(String beanName, Object obj) {
     this.simpleBeanFactory.registerBean(beanName, obj);
   }
-  public void registerBeanDefinition(BeanDefinition beanDefinition) {
-    this.simpleBeanFactory.registerBeanDefinition(beanDefinition);
+
+  public boolean isSingleton(String name) {
+    return false;
+  }
+
+  public boolean isPrototype(String name) {
+    return false;
+  }
+
+  public Class<?> getType(String name) {
+    return null;
+  }
+
+  public void publishEvent(ApplicationEvent event) {
+    // ToDo:
   }
 }
