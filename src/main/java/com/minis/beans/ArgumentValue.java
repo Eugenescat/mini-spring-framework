@@ -1,7 +1,5 @@
 package com.minis.beans;
 
-import com.sun.jdi.connect.Connector;
-
 public class ArgumentValue {
   private Object value;
   private String type;
