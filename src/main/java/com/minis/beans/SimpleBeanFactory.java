@@ -16,10 +16,20 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
   private final Map<String, Object> earlySingletonObjects = new HashMap<String, Object>(16);
   public SimpleBeanFactory() {
   }
+  /** create all the beans as bundle */
+  public void refresh() {
+    for (String beanName : beanNamesList) {
+      try {
+        getBean(beanName);
+      } catch (ClassNotFoundException | BeansException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
 
   // implement functions of BeanFactory
   /** instantiate the bean to get it, use the given beanName to search for the beanDefinition */
-  public Object getBean(String beanName) throws BeansException {
+  public Object getBean(String beanName) throws BeansException, ClassNotFoundException {
     // try if the bean is already registered, use methods extends from DefaultSingletonBeanRegistry
     Object singleton = this.getSingleton(beanName);
     // if not registered, try to find in cached hollow beans (earlySingletonObjects)
@@ -90,26 +100,18 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
   }
 
   /** based on the given beanDefinition, create a bean */
-  public Object createBean(BeanDefinition bd) throws BeansException {
+  public Object createBean(BeanDefinition bd) throws BeansException, ClassNotFoundException {
     // create the hollow bean object, handling constructor arguments， cache in the earlySingletons
     Object obj = preCreateBean(bd);
     this.earlySingletonObjects.put(bd.getId(), obj);
 
-    // obtain bean class for handling properties
-    Class<?> beanCls = null;
-    try {
-      beanCls = Class.forName(bd.getClassName());
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);
-    }
-
     // handle properties
-    handleProperties(bd, beanCls, obj);
+    handleProperties(bd, obj);
 
     return obj;
   }
 
-  // create a hollow bean and cache it, without handling properties
+  /** create a hollow bean and cache it, without handling properties */
   private Object preCreateBean(BeanDefinition bd) {
     Class<?> beanCls = null;
     Object obj = null;
@@ -167,9 +169,12 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
     return obj;
   }
 
-  public void handleProperties(BeanDefinition bd, Class<?> cls, Object obj) throws BeansException {
+  /** add properties to the cached hollow object bean */
+  public void handleProperties(BeanDefinition bd, Object obj) throws BeansException, ClassNotFoundException {
     System.out.println("handle properties for bean : " + bd.getId());
     PropertyValues propertyValues = bd.getPropertyValues();
+    Class<?> beanCls = Class.forName(bd.getClassName());
+
     if (!propertyValues.isEmpty()) {
       for (int i = 0; i < propertyValues.size(); i++) {
         PropertyValue propertyValue = propertyValues.getPropertyValueList().get(i);
@@ -200,13 +205,13 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
           try {
             paramTypes[0] = Class.forName(pType); // store Type
           } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new BeansException("class not found");
           }
           try {
             // instantiate the bean and store it (pValue is the beanName in ref property)
             paramValues[0] = getBean((String)pValue);
           } catch (BeansException e) {
-            throw new RuntimeException(e);
+            throw new BeansException("class not found");
           }
         }
 
@@ -220,9 +225,9 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         // The parameterTypes parameter is an array of Class objects that identify
         // the method's formal parameter types, in declared order.
         try {
-          method = cls.getMethod(methodName, paramTypes);
+          method = beanCls.getMethod(methodName, paramTypes);
         } catch (NoSuchMethodException e) {
-          throw new RuntimeException(e);
+          throw new BeansException("method not found");
         }
         try {
           // feels like: obj.method(paramValues) e.g. sarah.setAge(10)

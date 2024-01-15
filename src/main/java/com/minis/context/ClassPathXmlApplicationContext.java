@@ -13,7 +13,7 @@ import com.minis.core.Resource;
 public class ClassPathXmlApplicationContext implements BeanFactory, ApplicationEventPublisher {
   SimpleBeanFactory simpleBeanFactory;
 
-  public ClassPathXmlApplicationContext(String fileName) throws BeansException {
+  public ClassPathXmlApplicationContext(String fileName, boolean isRefresh) throws BeansException {
     // get an iterable resource from XML
     Resource resource = new ClassPathXmlResource(fileName);
     SimpleBeanFactory bf = new SimpleBeanFactory();
@@ -23,9 +23,17 @@ public class ClassPathXmlApplicationContext implements BeanFactory, ApplicationE
     reader.loadBeanDefinitions(resource);
     // bind the beanFactory to the instance
     this.simpleBeanFactory = bf;
+
+    if (isRefresh) {
+      this.simpleBeanFactory.refresh();
+    }
   }
 
-  public Object getBean(String beanName) throws BeansException {
+  public ClassPathXmlApplicationContext(String fileName) throws BeansException {
+    this(fileName, true);
+  }
+
+  public Object getBean(String beanName) throws BeansException, ClassNotFoundException {
     return this.simpleBeanFactory.getBean(beanName);
   }
   public boolean containsBean(String beanName){
