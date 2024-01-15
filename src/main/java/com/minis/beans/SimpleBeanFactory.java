@@ -1,5 +1,8 @@
 package com.minis.beans;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -81,16 +84,111 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
     return this.beanDefinitionMap.get(beanName).getClass();
   }
 
-  /** through the given beanDefinition, create a bean */
+  /** based on the given beanDefinition, create a bean */
   public Object createBean(BeanDefinition bd) {
-    Object singleton = null;
+    // bean object to be created
+    Object obj = null;
+    // bean's class
+    Class<?> cls = null;
+    // bean's constructor
+    Constructor<?> cons = null;
+
+    // handle constructor arguments
     try {
-      singleton = Class.forName(bd.getClassName()).newInstance();
+      // obtain class from this beanDefinition
+      cls = Class.forName(bd.getClassName());
+
+      // obtain argument values from this beanDefinition
+      ArgumentValues argumentValues = bd.getConstructorArgumentValues();
+
+      // if this beanDefinition has argument values
+      if (!argumentValues.isEmpty()) {
+        int n = argumentValues.getArgumentCount();
+        Class<?>[] paramTypes = new Class<?>[n];
+        Object[] paramValues = new Object[n];
+
+        // store argument values into the two arrays: type array, value array
+        for (int i = 0; i < argumentValues.getArgumentCount(); i++){
+          ArgumentValue argumentValue = argumentValues.getIndexedArgumentValue(i);
+          if ("String".equals(argumentValue.getType()) || "java.lang.String".equals(argumentValue.getType())) {
+            paramTypes[i] = String.class;
+            paramValues[i] = argumentValue.getValue();
+          } else if ("Integer".equals(argumentValue.getType()) || "java.lang.Integer".equals(argumentValue.getType())) {
+            paramTypes[i] = Integer.class;
+            paramValues[i] = Integer.valueOf((String)argumentValue.getValue());
+          } else if ("int".equals(argumentValue.getType())) {
+            paramTypes[i] = int.class;
+            paramValues[i] = Integer.valueOf((String) argumentValue.getValue());
+          } else { // default as string
+            paramTypes[i] = String.class;
+            paramValues[i] = argumentValue.getValue();
+          }
+
+        }
+        // use the argument values to create an instance
+        try {
+          cons = cls.getConstructor(paramTypes);
+          // feed the constructor an array of parameters
+          obj = cons.newInstance(paramValues);
+        } catch (InvocationTargetException | NoSuchMethodException e) {
+          throw new RuntimeException(e);
+        }
+      }
+      // if this beanDefinition has no argument values, directly create objects using obtained class
+      else {
+        obj = cls.newInstance();
+      }
     } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
       throw new RuntimeException(e);
     }
-    // use methods extends from DefaultSingletonBeanRegistry
-    this.registerSingleton(bd.getId(), singleton);
-    return singleton;
+
+    // handle properties
+    PropertyValues propertyValues = bd.getPropertyValues();
+    if (!propertyValues.isEmpty()) {
+      for (int i = 0; i < propertyValues.size(); i++) {
+        PropertyValue propertyValue = propertyValues.getPropertyValueList().get(i);
+        String pName = propertyValue.getName();
+        String pType = propertyValue.getType();
+        Object pValue = propertyValue.getValue();
+        // Java not allow for create a class with unknown type, thus use array[1]
+        Class<?>[] paramTypes = new Class<?>[1];
+        if ("String".equals(pType) || "java.lang.String".equals(pType)) {
+          paramTypes[0] = String.class;
+        }
+        else if ("Integer".equals(pType) || "java.lang.Integer".equals(pType)) {
+          paramTypes[0] = Integer.class;
+        }
+        else if ("int".equals(pType)) {
+          paramTypes[0] = int.class;
+        }
+        else {
+          paramTypes[0] = String.class;
+        }
+        Object[] paramValues = new Object[1];
+        paramValues[0] = pValue;
+
+        // set + "A" + "ge" = setAge
+        String methodName = "set" + pName.substring(0, 1).toUpperCase() + pName.substring(1);
+
+        // reflection
+        // A Method provides information about, and access to, a single method on a class/interface.
+        Method method = null;
+
+        // The parameterTypes parameter is an array of Class objects that identify
+        // the method's formal parameter types, in declared order.
+        try {
+          method = cls.getMethod(methodName, paramTypes);
+        } catch (NoSuchMethodException e) {
+          throw new RuntimeException(e);
+        }
+        try {
+          // feels like: obj.method(paramValues) e.g. sarah.setAge(10)
+          method.invoke(obj, paramValues);
+        } catch (InvocationTargetException | IllegalAccessException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+    return obj;
   }
 }

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ArgumentValues {
-  private final List<ArgumentValue> argumentValueList = new ArrayList<ArgumentValue>();
+  private final List<ArgumentValue> argumentValueList = new ArrayList<>();
 
   public ArgumentValues() {
   }

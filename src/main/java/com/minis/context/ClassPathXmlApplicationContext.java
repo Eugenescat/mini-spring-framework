@@ -13,7 +13,7 @@ import com.minis.core.Resource;
 public class ClassPathXmlApplicationContext implements BeanFactory, ApplicationEventPublisher {
   SimpleBeanFactory simpleBeanFactory;
 
-  public ClassPathXmlApplicationContext(String fileName) {
+  public ClassPathXmlApplicationContext(String fileName) throws BeansException {
     // get an iterable resource from XML
     Resource resource = new ClassPathXmlResource(fileName);
     SimpleBeanFactory bf = new SimpleBeanFactory();
