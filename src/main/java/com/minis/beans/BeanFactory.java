@@ -2,7 +2,7 @@ package com.minis.beans;
 
 /** store beans */
 public interface BeanFactory {
-    Object getBean(String beanName) throws BeansException;
+    Object getBean(String beanName) throws BeansException, ClassNotFoundException;
     boolean containsBean(String beanName);
     void registerBean(String beanName, Object obj);
     boolean isSingleton(String name);
