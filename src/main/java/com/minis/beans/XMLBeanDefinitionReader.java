@@ -4,6 +4,7 @@ import com.minis.core.Resource;
 
 import org.dom4j.Element;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /** has a method to load all the beanDefinitions from the input XML resource into the included factory */
@@ -23,15 +24,28 @@ public class XMLBeanDefinitionReader {
       // handle property. type+name+value of each property, add together to property values
       List<Element> propertyElementList = element.elements("property");
       PropertyValues PVS = new PropertyValues();
+      List<String> refs = new ArrayList<>();
       for (Element e : propertyElementList) {
         String pType = e.attributeValue("type");
         String pName = e.attributeValue("name");
         String pValue = e.attributeValue("value");
-        PVS.addPropertyValue(new PropertyValue(pType, pName, pValue));
+        // handle ref property.
+        // both regular value and ref are contained in pV, using isRef to distinguish
+        String pRef = e.attributeValue("ref");
+        String pV = "";
+        boolean isRef = false;
+        if (pValue != null && !pValue.isEmpty()) {
+          pV = pValue;
+        } else if (pRef != null && !pRef.isEmpty()) {
+          isRef = true;
+          pV = pRef;
+          refs.add(pRef);
+        }
+        PVS.addPropertyValue(new PropertyValue(pType, pName, pV, isRef));
       }
       beanDefinition.setPropertyValues(PVS);
 
-      // handle constructor argument values. the same as property values
+      // handle constructor argument values. the same way as property values
       List<Element> constructorElements = element.elements("constructor-arg");
       ArgumentValues AVS = new ArgumentValues();
       for (Element e : constructorElements) {
@@ -42,6 +56,8 @@ public class XMLBeanDefinitionReader {
       }
       beanDefinition.setConstructorArgumentValues(AVS);
 
+      String[] refArray = refs.toArray(new String[0]);
+      beanDefinition.setDependsOn(refArray);
       this.simpleBeanFactory.registerBeanDefinition(beanDefinition);
     }
   }

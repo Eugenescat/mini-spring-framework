@@ -17,7 +17,7 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
   }
 
   // implement functions of BeanFactory
-  /** in lazy model, when we need to get the bean instance, we initiate it */
+  /** instantiate the bean to get it, use the given beanName to search for the beanDefinition */
   public Object getBean(String beanName) throws BeansException {
     // try if the bean is already registered, use methods extends from DefaultSingletonBeanRegistry
     Object singleton = this.getSingleton(beanName);
@@ -143,29 +143,53 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
     }
 
     // handle properties
+    handleProperties(bd, cls, obj);
+
+    return obj;
+  }
+
+  public void handleProperties(BeanDefinition bd, Class<?> cls, Object obj) throws BeansException {
+    System.out.println("handle properties for bean : " + bd.getId());
     PropertyValues propertyValues = bd.getPropertyValues();
     if (!propertyValues.isEmpty()) {
       for (int i = 0; i < propertyValues.size(); i++) {
         PropertyValue propertyValue = propertyValues.getPropertyValueList().get(i);
         String pName = propertyValue.getName();
         String pType = propertyValue.getType();
-        Object pValue = propertyValue.getValue();
-        // Java not allow for create a class with unknown type, thus use array[1]
-        Class<?>[] paramTypes = new Class<?>[1];
-        if ("String".equals(pType) || "java.lang.String".equals(pType)) {
-          paramTypes[0] = String.class;
-        }
-        else if ("Integer".equals(pType) || "java.lang.Integer".equals(pType)) {
-          paramTypes[0] = Integer.class;
-        }
-        else if ("int".equals(pType)) {
-          paramTypes[0] = int.class;
-        }
-        else {
-          paramTypes[0] = String.class;
-        }
+        Object pValue = propertyValue.getValue(); // value may be value or refName
+        boolean isRef = propertyValue.getIsRef();
+        Class<?>[] paramTypes = new Class<?>[1]; // Java not allow for create a class with unknown type, thus use array[1]
         Object[] paramValues = new Object[1];
-        paramValues[0] = pValue;
+
+        // for regular property
+        if (!isRef) {
+          // store its Type
+          if ("String".equals(pType) || "java.lang.String".equals(pType)) {
+            paramTypes[0] = String.class;
+          } else if ("Integer".equals(pType) || "java.lang.Integer".equals(pType)) {
+            paramTypes[0] = Integer.class;
+          } else if ("int".equals(pType)) {
+            paramTypes[0] = int.class;
+          } else {
+            paramTypes[0] = String.class;
+          }
+          paramValues[0] = pValue; // store Value
+        }
+
+        // for ref property
+        else {
+          try {
+            paramTypes[0] = Class.forName(pType); // store Type
+          } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+          }
+          try {
+            // instantiate the bean and store it (pValue is the beanName in ref property)
+            paramValues[0] = getBean((String)pValue);
+          } catch (BeansException e) {
+            throw new RuntimeException(e);
+          }
+        }
 
         // set + "A" + "ge" = setAge
         String methodName = "set" + pName.substring(0, 1).toUpperCase() + pName.substring(1);
@@ -189,6 +213,5 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         }
       }
     }
-    return obj;
   }
 }
