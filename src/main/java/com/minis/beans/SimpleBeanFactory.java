@@ -13,6 +13,7 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
 
   private Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
   protected List<String> beanNamesList = new ArrayList<>();
+  private final Map<String, Object> earlySingletonObjects = new HashMap<String, Object>(16);
   public SimpleBeanFactory() {
   }
 
@@ -21,17 +22,21 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
   public Object getBean(String beanName) throws BeansException {
     // try if the bean is already registered, use methods extends from DefaultSingletonBeanRegistry
     Object singleton = this.getSingleton(beanName);
-    // if not registered, try to find from beanDefinitionMap and create it
+    // if not registered, try to find in cached hollow beans (earlySingletonObjects)
     if (singleton == null) {
-      BeanDefinition bd = beanDefinitionMap.get(beanName);
-      singleton = createBean(bd);
-      this.registerBean(beanName, singleton);
-      if (bd.getInitMethodName() != null) {
-        // ToDo: init
-      }
-      // if not even found in the beanDefinitionMap, throw exception
-      if (bd == null) {
-        throw new BeansException("bean not found");
+      singleton = this.earlySingletonObjects.get(beanName);
+      // if even no earlySingletonObjects, get beanDefinition and create it
+      if (singleton == null) {
+        BeanDefinition bd = beanDefinitionMap.get(beanName);
+        singleton = createBean(bd);
+        this.registerBean(beanName, singleton);
+        if (bd.getInitMethodName() != null) {
+          // ToDo: init
+        }
+        // if not even found in the beanDefinitionMap, throw exception
+        if (bd == null) {
+          throw new BeansException("bean not found");
+        }
       }
     }
     return singleton;
@@ -85,18 +90,34 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
   }
 
   /** based on the given beanDefinition, create a bean */
-  public Object createBean(BeanDefinition bd) {
-    // bean object to be created
-    Object obj = null;
-    // bean's class
-    Class<?> cls = null;
-    // bean's constructor
-    Constructor<?> cons = null;
+  public Object createBean(BeanDefinition bd) throws BeansException {
+    // create the hollow bean object, handling constructor arguments， cache in the earlySingletons
+    Object obj = preCreateBean(bd);
+    this.earlySingletonObjects.put(bd.getId(), obj);
 
-    // handle constructor arguments
+    // obtain bean class for handling properties
+    Class<?> beanCls = null;
+    try {
+      beanCls = Class.forName(bd.getClassName());
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+
+    // handle properties
+    handleProperties(bd, beanCls, obj);
+
+    return obj;
+  }
+
+  // create a hollow bean and cache it, without handling properties
+  private Object preCreateBean(BeanDefinition bd) {
+    Class<?> beanCls = null;
+    Object obj = null;
+    Constructor<?> beanCons = null;
+
     try {
       // obtain class from this beanDefinition
-      cls = Class.forName(bd.getClassName());
+      beanCls = Class.forName(bd.getClassName());
 
       // obtain argument values from this beanDefinition
       ArgumentValues argumentValues = bd.getConstructorArgumentValues();
@@ -127,24 +148,22 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         }
         // use the argument values to create an instance
         try {
-          cons = cls.getConstructor(paramTypes);
+          beanCons = beanCls.getConstructor(paramTypes);
           // feed the constructor an array of parameters
-          obj = cons.newInstance(paramValues);
+          obj = beanCons.newInstance(paramValues);
         } catch (InvocationTargetException | NoSuchMethodException e) {
           throw new RuntimeException(e);
         }
       }
       // if this beanDefinition has no argument values, directly create objects using obtained class
       else {
-        obj = cls.newInstance();
+        obj = beanCls.newInstance();
       }
     } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
       throw new RuntimeException(e);
     }
 
-    // handle properties
-    handleProperties(bd, cls, obj);
-
+    System.out.println(bd.getId() + " bean created. " + bd.getClassName() + " : " + obj.toString());
     return obj;
   }
 
