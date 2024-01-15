@@ -12,7 +12,7 @@ public class BaseService {
   public BaseService() {
   }
   public void sayHello() {
-    System.out.print("Base Service says hello");
+    System.out.print("Base Service says hello\n");
     bbs.sayHello();
   }
 }

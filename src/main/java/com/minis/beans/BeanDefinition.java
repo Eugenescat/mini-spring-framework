@@ -18,7 +18,7 @@ public class BeanDefinition {
     private volatile Object beanClass;
 
     // where or not such bean would use lazy initiate
-    private boolean lazyInit = false;
+    private boolean lazyInit = true;
     // after a Bean is constructed and instantiated, framework call the initialization method or not
     private String initMethodName;
 

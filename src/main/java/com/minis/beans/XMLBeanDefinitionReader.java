@@ -46,9 +46,9 @@ public class XMLBeanDefinitionReader {
       beanDefinition.setPropertyValues(PVS);
 
       // handle constructor argument values. the same way as property values
-      List<Element> constructorElements = element.elements("constructor-arg");
+      List<Element> constructorElementsList = element.elements("constructor-arg");
       ArgumentValues AVS = new ArgumentValues();
-      for (Element e : constructorElements) {
+      for (Element e : constructorElementsList) {
         String aType = e.attributeValue("type");
         String aName = e.attributeValue("name");
         String aValue = e.attributeValue("value");
@@ -56,9 +56,12 @@ public class XMLBeanDefinitionReader {
       }
       beanDefinition.setConstructorArgumentValues(AVS);
 
+      // refArray
       String[] refArray = refs.toArray(new String[0]);
       beanDefinition.setDependsOn(refArray);
+
       this.simpleBeanFactory.registerBeanDefinition(beanDefinition);
+      System.out.println("successfully registered " + beanID + " beanDefinition");
     }
   }
 }

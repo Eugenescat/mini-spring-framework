@@ -22,7 +22,8 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
       try {
         getBean(beanName);
       } catch (ClassNotFoundException | BeansException e) {
-        throw new RuntimeException(e);
+        //throw new RuntimeException(e);
+        e.printStackTrace();
       }
     }
   }
@@ -34,12 +35,15 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
     Object singleton = this.getSingleton(beanName);
     // if not registered, try to find in cached hollow beans (earlySingletonObjects)
     if (singleton == null) {
+      System.out.println(beanName + " not created as singleton");
       singleton = this.earlySingletonObjects.get(beanName);
       // if even no earlySingletonObjects, get beanDefinition and create it
       if (singleton == null) {
+        System.out.println(beanName + " not cached as earlySingleton, handle creating it");
         BeanDefinition bd = beanDefinitionMap.get(beanName);
         singleton = createBean(bd);
         this.registerBean(beanName, singleton);
+        System.out.println(beanName + " singleton registered");
         if (bd.getInitMethodName() != null) {
           // ToDo: init
         }
@@ -69,7 +73,8 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         // use beanFactory part to instantiate the bean immediately if it's not meant to be lazy.
         getBean(beanName);
       } catch (Exception e) {
-        throw new BeansException("bean instantiated error");
+        //throw new BeansException("bean instantiated error");
+        e.printStackTrace();
       }
     }
   }
@@ -101,18 +106,22 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
 
   /** based on the given beanDefinition, create a bean */
   public Object createBean(BeanDefinition bd) throws BeansException, ClassNotFoundException {
+    System.out.println("handle caching " + bd.getId() + " " + bd.getClassName());
     // create the hollow bean object, handling constructor arguments， cache in the earlySingletons
     Object obj = preCreateBean(bd);
     this.earlySingletonObjects.put(bd.getId(), obj);
+    System.out.println(bd.getId() + " bean cached. " + bd.getClassName() + " : " + obj.toString());
 
+    System.out.println("handle properties for bean : " + bd.getId());
     // handle properties
     handleProperties(bd, obj);
+    System.out.println("finished properties for bean : " + bd.getId());
 
     return obj;
   }
 
   /** create a hollow bean and cache it, without handling properties */
-  private Object preCreateBean(BeanDefinition bd) {
+  private Object preCreateBean(BeanDefinition bd) throws BeansException {
     Class<?> beanCls = null;
     Object obj = null;
     Constructor<?> beanCons = null;
@@ -154,7 +163,7 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
           // feed the constructor an array of parameters
           obj = beanCons.newInstance(paramValues);
         } catch (InvocationTargetException | NoSuchMethodException e) {
-          throw new RuntimeException(e);
+          e.printStackTrace();;
         }
       }
       // if this beanDefinition has no argument values, directly create objects using obtained class
@@ -162,16 +171,15 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         obj = beanCls.newInstance();
       }
     } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-      throw new RuntimeException(e);
+    //  throw new BeansException("Error create bean handling constructor arguments");
+      e.printStackTrace();
     }
 
-    System.out.println(bd.getId() + " bean created. " + bd.getClassName() + " : " + obj.toString());
     return obj;
   }
 
   /** add properties to the cached hollow object bean */
   public void handleProperties(BeanDefinition bd, Object obj) throws BeansException, ClassNotFoundException {
-    System.out.println("handle properties for bean : " + bd.getId());
     PropertyValues propertyValues = bd.getPropertyValues();
     Class<?> beanCls = Class.forName(bd.getClassName());
 
@@ -202,20 +210,23 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
 
         // for ref property
         else {
+          System.out.println(bd.getId() + " isRef to: " + propertyValue.getType() + " : " + pValue);
           try {
             paramTypes[0] = Class.forName(pType); // store Type
           } catch (ClassNotFoundException e) {
-            throw new BeansException("class not found");
+            //throw new BeansException("class not found");
+            e.printStackTrace();
           }
           try {
             // instantiate the bean and store it (pValue is the beanName in ref property)
             paramValues[0] = getBean((String)pValue);
           } catch (BeansException e) {
-            throw new BeansException("class not found");
+            //throw new BeansException("class not found");
+            e.printStackTrace();
           }
         }
 
-        // set + "A" + "ge" = setAge
+        // feels like: set + "A" + "ge" = setAge
         String methodName = "set" + pName.substring(0, 1).toUpperCase() + pName.substring(1);
 
         // reflection
@@ -227,13 +238,15 @@ public class SimpleBeanFactory extends DefaultSingletonBeanRegistry implements B
         try {
           method = beanCls.getMethod(methodName, paramTypes);
         } catch (NoSuchMethodException e) {
-          throw new BeansException("method not found");
+          //throw new BeansException("method not found");
+          e.printStackTrace();
         }
         try {
           // feels like: obj.method(paramValues) e.g. sarah.setAge(10)
           method.invoke(obj, paramValues);
         } catch (InvocationTargetException | IllegalAccessException e) {
-          throw new RuntimeException(e);
+          //throw new RuntimeException(e);
+          e.printStackTrace();
         }
       }
     }
